@@ -38,8 +38,6 @@ public class BurpExtender implements IBurpExtender, IHttpListener {
             e.printStackTrace();
             return;
         }
-
-        // start at the first IP address
         currentIndex = 0;
     }
 
@@ -47,28 +45,19 @@ public class BurpExtender implements IBurpExtender, IHttpListener {
     public void processHttpMessage(int toolFlag, boolean messageIsRequest,
         IHttpRequestResponse messageInfo) {
 
-        // only process requests
         if (!messageIsRequest) {
             return;
         }
-
-        // get the request message
         byte[] request = messageInfo.getRequest();
-
-        // update the Host header with the current IP address
         List<String> headers = helpers.analyzeRequest(request).getHeaders();
         for (int i = 0; i < headers.size(); i++) {
-            if (headers.get(i).startsWith("Host:")) {
-                headers.set(i, "Host: " + ipAddresses.get(currentIndex));
+            if (headers.get(i).startsWith(" X-Forwarded-For:")) {
+                headers.set(i, "X-Forwarded-For:" + ipAddresses.get(currentIndex));
                 break;
             }
         }
-
-        // update the request message with the new headers
         request = helpers.buildHttpMessage(headers, null);
         messageInfo.setRequest(request);
-
-        // move to the next IP address
         currentIndex = (currentIndex + 1) % ipAddresses.size();
     }
 
